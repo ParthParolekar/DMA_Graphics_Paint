@@ -54,4 +54,15 @@ void gfx_draw_brush_stamp(uint16_t cx, uint16_t cy, uint16_t size, uint16_t colo
 	gfx_draw_rectangle(x, y, size, size, color, 1);
 }
 
+void gfx_paint_stamp(uint16_t cx, uint16_t cy, uint16_t size, uint16_t color){
+	uint16_t half = size/2;
+	uint16_t x = cx >= half ? cx - half : 0;
+	uint16_t y = cy >= half ? cy - half : 0;
+
+	if(x + size > 240) x = 240-size;
+	if(y + size > 320) y = 320-size;
+
+	fb_paint_rectangle(x, y, size, size, color);
+}
+
 

@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "display_driver.h"
+#include "framebuffer.h"
 #include "graphics.h"
 /* USER CODE END Includes */
 
@@ -58,7 +59,13 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+static void test_scene(void) {
+    gfx_draw_rectangle(20, 10, 200, 60, 0xF800, 0);      // red outline, crosses strips 0-3
+    gfx_draw_rectangle(40, 100, 80, 50, 0x07E0, 1);      // filled green, crosses strips 5-7
+    gfx_draw_vline(200, 0, 320, 0x001F);                 // blue line, full screen height
+    gfx_draw_brush_stamp(120, 20, 10, 0xFFFF);           // white stamp on the strip 0/1 boundary
+    gfx_draw_brush_stamp(120, 200, 30, 0xFFE0);          // yellow stamp, mid-screen
+}
 /* USER CODE END 0 */
 
 /**
@@ -95,34 +102,74 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   display_init();
-  gfx_clear_screen(0x0000);
-
-  uint32_t t0 = HAL_GetTick();
-
-  for (uint16_t y = 150; y < 170; y++){
-	  for (uint16_t x = 110; x < 130; x++){
-		  gfx_set_pixel(x, y, 0xFFFF);
-	  }
-  }
-
-  uint32_t elapsed1 = HAL_GetTick() - t0;
-
-  t0 = HAL_GetTick();
-
-  gfx_draw_rectangle(30, 200, 20, 20, 0x001F, 1);
-
-  uint32_t elapsed2 = HAL_GetTick() - t0;
-
-  gfx_set_pixel(0, 0, 0xFFFF);        // white dot at top-left
-  gfx_set_pixel(239, 0, 0xF800);      // red dot at top-right
-  gfx_set_pixel(0, 319, 0x07E0);      // green dot at bottom-left
-  gfx_set_pixel(239, 319, 0x001F);    // blue dot at bottom-right
-
-  gfx_draw_hline(10, 100, 150, 0xF800);
-  gfx_draw_vline(80, 25, 150, 0x07E0);
 
 
-  gfx_draw_brush_stamp(240, 0, 30, 0xF800);
+  /************** Basic Function Tests **************/
+  fb_render(test_scene, 0x0000);        // black background
+
+  gfx_paint_stamp(60, 250, 10, 0xFFFF);    // white
+  gfx_paint_stamp(66, 252, 10, 0xF800);    // red, overlapping the white
+  gfx_paint_stamp(72, 254, 10, 0x07E0);    // green, overlapping the red
+  gfx_paint_stamp(0, 0, 12, 0x001F);       // top-left corner: should stay fully on-screen
+  gfx_paint_stamp(239, 319, 12, 0x001F);   // bottom-right corner: same
+
+//
+//  fb_set_tile(100, 150, 20, 20);
+//  for (uint16_t i = 0; i < 20; i++){
+//	  fb_set_pixel(100+i, 150+i, 0xFFFF);
+//  }
+
+//  fb_set_tile(40, 60, 30, 10);                 // 30 wide, 10 tall
+//  fb_set_pixel(40, 60, 0xF800);                // top-left: red
+//  fb_set_pixel(69, 60, 0x07E0);                // top-right: green
+//  fb_set_pixel(40, 69, 0x001F);                // bottom-left: blue
+//  fb_set_pixel(69, 69, 0xFFFF);                // bottom-right: white
+//  fb_set_pixel(100, 100, 0xF800);              // outside the tile: should NOT appear
+//  fb_flush();
+
+//  fb_set_tile(40, 60, 30, 10);        // covers columns 40-69, rows 60-69
+//  fb_set_hline(30, 65, 50, 0xF800);   // columns 30-79: overhangs both sides
+//  fb_set_hline(45, 62, 10, 0x07E0);   // fully inside
+//  fb_set_hline(40, 75, 20, 0x001F);   // row 75 is below the tile: should NOT appear
+//  fb_flush();
+
+//  fb_set_tile(40, 60, 30, 10);        // columns 40-69, rows 60-69
+//  fb_set_vline(50, 55, 20, 0xF800);   // rows 55-74: overhangs top and bottom
+//  fb_set_vline(60, 62, 4, 0x07E0);    // fully inside: rows 62-65
+//  fb_set_vline(80, 60, 5, 0x001F);    // column 80 is right of the tile: should NOT appear
+//  fb_flush();
+
+//  fb_set_tile(40, 60, 30, 10);
+//  fb_fill_tile(0x001F);                // blue background
+//  fb_set_pixel(40, 60, 0xFFFF);        // white dot at top-left
+//  fb_set_pixel(69, 69, 0xFFFF);        // white dot at bottom-right
+//  fb_flush();
+//
+//  fb_set_tile(100, 150, 20, 5);        // move the tile, but don't fill
+//  fb_set_pixel(100, 150, 0xF800);      // one red dot
+//  fb_flush();
+
+//  fb_begin_tile(40, 60, 30, 10, 0x001F);	// blue background
+//  fb_set_pixel(40, 60, 0xFFFF);       	 	// white dot at top-left
+//  fb_set_pixel(69, 69, 0xFFFF);        		// white dot at bottom-right
+//  fb_flush();
+//
+//  fb_begin_tile(100, 150, 20, 5, 0x001F);
+//  fb_set_pixel(100, 150, 0xF800);      		// one red dot
+//  fb_flush();
+
+
+//  gfx_set_pixel(0, 0, 0xFFFF);        // white dot at top-left
+//  gfx_set_pixel(239, 0, 0xF800);      // red dot at top-right
+//  gfx_set_pixel(0, 319, 0x07E0);      // green dot at bottom-left
+//  gfx_set_pixel(239, 319, 0x001F);    // blue dot at bottom-right
+//
+//  gfx_draw_hline(10, 100, 150, 0xF800);
+//  gfx_draw_vline(80, 25, 150, 0x07E0);
+//
+//
+//  gfx_draw_brush_stamp(240, 0, 30, 0xF800);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -130,11 +177,6 @@ int main(void)
   while (1)
   {
 
-	  char msg[64];
-	  int len = snprintf(msg, sizeof(msg), "Elapsed 1: %lu  Elapsed 2: %lu\r\n", elapsed1, elapsed2);
-	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, (uint16_t)len, HAL_MAX_DELAY);
-
-	  HAL_Delay(200);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
