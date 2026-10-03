@@ -25,9 +25,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdlib.h>
 #include "display_driver.h"
 #include "framebuffer.h"
 #include "graphics.h"
+#include "touch.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,7 +41,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define BRUSH_SIZE		4
+#define BRUSH_COLOR  0xFFFF
+#define MAX_JUMP     30
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,6 +71,11 @@ static void test_scene(void) {
     gfx_draw_vline(200, 0, 320, 0x001F);                 // blue line, full screen height
     gfx_draw_brush_stamp(120, 20, 10, 0xFFFF);           // white stamp on the strip 0/1 boundary
     gfx_draw_brush_stamp(120, 200, 30, 0xFFE0);          // yellow stamp, mid-screen
+}
+
+static void clear_screen_scene(void) {
+    gfx_draw_rectangle(0, 0, 240, 320, 0x0000, 1);      // Clear screen
+
 }
 /* USER CODE END 0 */
 
@@ -105,13 +116,56 @@ int main(void)
 
 
   /************** Basic Function Tests **************/
-  fb_render(test_scene, 0x0000);        // black background
+  fb_render(clear_screen_scene, 0x0000);        // black background
 
-  gfx_paint_stamp(60, 250, 10, 0xFFFF);    // white
-  gfx_paint_stamp(66, 252, 10, 0xF800);    // red, overlapping the white
-  gfx_paint_stamp(72, 254, 10, 0x07E0);    // green, overlapping the red
-  gfx_paint_stamp(0, 0, 12, 0x001F);       // top-left corner: should stay fully on-screen
-  gfx_paint_stamp(239, 319, 12, 0x001F);   // bottom-right corner: same
+  uint8_t  stroking = 0;          // 1 while the stylus is down and moving
+  uint8_t  rejected = 0;          // consecutive reads thrown away as jumps
+  uint16_t last_x = 0, last_y = 0;
+  char msg[40];
+
+//  while (1) {
+//	  uint16_t ax, ay, sx, sy;
+//	  if(touch_read_averaged(&ax, &ay)){
+//
+//		  touch_to_screen(ax, ay, &sx, &sy);
+//		  gfx_paint_stamp(sx, sy, BRUSH_SIZE, 0xFFFF);
+//	  }
+//
+//  }
+
+  while (1) {
+        uint16_t ax, ay, sx, sy;
+
+        if (touch_read_averaged(&ax, &ay)) {
+            touch_to_screen(ax, ay, &sx, &sy);
+
+            if (stroking) {
+                if (abs((int)sx - last_x) > MAX_JUMP || abs((int)sy - last_y) > MAX_JUMP) {
+                    if (++rejected < 3) continue;     // ignore this one
+                    stroking = 0;                      // three in a row: really moved, start a new stroke
+                }
+            }
+            rejected = 0;
+
+            if (stroking) {
+                gfx_paint_line(last_x, last_y, sx, sy, BRUSH_SIZE, BRUSH_COLOR);
+            } else {
+                gfx_paint_stamp(sx, sy, BRUSH_SIZE, BRUSH_COLOR);    // first point of a stroke
+                stroking = 1;
+            }
+            last_x = sx;
+            last_y = sy;
+        } else {
+            stroking = 0;           // stylus lifted: next touch starts a new stroke
+            rejected = 0;
+        }
+    }
+
+//  gfx_paint_stamp(60, 250, 10, 0xFFFF);    // white
+//  gfx_paint_stamp(66, 252, 10, 0xF800);    // red, overlapping the white
+//  gfx_paint_stamp(72, 254, 10, 0x07E0);    // green, overlapping the red
+//  gfx_paint_stamp(0, 0, 12, 0x001F);       // top-left corner: should stay fully on-screen
+//  gfx_paint_stamp(239, 319, 12, 0x001F);   // bottom-right corner: same
 
 //
 //  fb_set_tile(100, 150, 20, 20);

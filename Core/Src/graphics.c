@@ -65,4 +65,27 @@ void gfx_paint_stamp(uint16_t cx, uint16_t cy, uint16_t size, uint16_t color){
 	fb_paint_rectangle(x, y, size, size, color);
 }
 
+// Paint a thick line from (x0,y0) to (x1,y1) by stamping along it.
+// Writes straight to the display, like gfx_paint_stamp().
+void gfx_paint_line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,
+                    uint16_t size, uint16_t color) {
+    int32_t dx = (int32_t)x1 - x0;
+    int32_t dy = (int32_t)y1 - y0;
+
+    int32_t adx = dx < 0 ? -dx : dx;
+    int32_t ady = dy < 0 ? -dy : dy;
+    int32_t dist = adx > ady ? adx : ady;      // length along the longer axis
+
+    int32_t step = size / 2;                   // distance between stamps
+    if (step < 1) step = 1;
+
+    int32_t n = (dist + step - 1) / step;      // number of steps, rounded up
+
+    for (int32_t i = 0; i <= n; i++) {
+        int32_t x = n ? x0 + dx * i / n : x0;
+        int32_t y = n ? y0 + dy * i / n : y0;
+        gfx_paint_stamp((uint16_t)x, (uint16_t)y, size, color);
+    }
+}
+
 

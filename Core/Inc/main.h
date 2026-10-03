@@ -71,6 +71,8 @@ void Error_Handler(void);
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
+#define TOUCH_IRQ_Pin GPIO_PIN_4
+#define TOUCH_IRQ_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 
