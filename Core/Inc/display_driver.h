@@ -23,4 +23,9 @@ void draw_hline(uint16_t x, uint16_t y, uint16_t length, uint16_t color);
 void draw_vline(uint16_t x, uint16_t y, uint16_t length, uint16_t color);
 void fill_screen(uint16_t color);
 
+void display_wait_ready(void);
+uint32_t display_dma_error_count(void);
+void display_dma_init(void);
+void display_data_buffer_dma(const uint8_t *buf, uint16_t len);
+
 #endif /* INC_DISPLAY_DRIVER_H_ */

@@ -20,6 +20,8 @@ static uint16_t tile_w = FB_BUF_W;
 static uint16_t tile_h = FB_BUF_H;
 
 uint8_t fb_set_tile(uint16_t x, uint16_t y, uint16_t w, uint16_t h){
+	display_wait_ready();	//Wait for the DMA transfer to complete if already ongoing
+
 	if(w == 0 || h==0) return 0;
 	if((uint32_t)w * h > (uint32_t)FB_BUF_W * FB_BUF_H) return 0;
 	tile_x = x;
@@ -30,6 +32,8 @@ uint8_t fb_set_tile(uint16_t x, uint16_t y, uint16_t w, uint16_t h){
 }
 
 void fb_fill_tile(uint16_t color){
+	display_wait_ready();	//Wait for the DMA transfer to complete if already ongoing
+
 	uint8_t hi = color >> 8;
 	uint8_t lo = color & 0xFF;
 	uint32_t total = (uint32_t)tile_w * tile_h * 2;
@@ -118,7 +122,7 @@ void fb_flush(void) {
     uint16_t len = tile_w * tile_h * 2;
 
     set_window(tile_x, tile_y, x1, y1);
-    display_data_buffer(tile_buffer, len);
+    display_data_buffer_dma(tile_buffer, len);
 }
 
 void fb_clear(uint16_t color) {

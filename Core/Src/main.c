@@ -112,6 +112,7 @@ int main(void)
   MX_SPI2_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  display_dma_init();
   display_init();
 
 
@@ -121,17 +122,6 @@ int main(void)
   uint8_t  stroking = 0;          // 1 while the stylus is down and moving
   uint8_t  rejected = 0;          // consecutive reads thrown away as jumps
   uint16_t last_x = 0, last_y = 0;
-  char msg[40];
-
-//  while (1) {
-//	  uint16_t ax, ay, sx, sy;
-//	  if(touch_read_averaged(&ax, &ay)){
-//
-//		  touch_to_screen(ax, ay, &sx, &sy);
-//		  gfx_paint_stamp(sx, sy, BRUSH_SIZE, 0xFFFF);
-//	  }
-//
-//  }
 
   while (1) {
         uint16_t ax, ay, sx, sy;
@@ -160,69 +150,6 @@ int main(void)
             rejected = 0;
         }
     }
-
-//  gfx_paint_stamp(60, 250, 10, 0xFFFF);    // white
-//  gfx_paint_stamp(66, 252, 10, 0xF800);    // red, overlapping the white
-//  gfx_paint_stamp(72, 254, 10, 0x07E0);    // green, overlapping the red
-//  gfx_paint_stamp(0, 0, 12, 0x001F);       // top-left corner: should stay fully on-screen
-//  gfx_paint_stamp(239, 319, 12, 0x001F);   // bottom-right corner: same
-
-//
-//  fb_set_tile(100, 150, 20, 20);
-//  for (uint16_t i = 0; i < 20; i++){
-//	  fb_set_pixel(100+i, 150+i, 0xFFFF);
-//  }
-
-//  fb_set_tile(40, 60, 30, 10);                 // 30 wide, 10 tall
-//  fb_set_pixel(40, 60, 0xF800);                // top-left: red
-//  fb_set_pixel(69, 60, 0x07E0);                // top-right: green
-//  fb_set_pixel(40, 69, 0x001F);                // bottom-left: blue
-//  fb_set_pixel(69, 69, 0xFFFF);                // bottom-right: white
-//  fb_set_pixel(100, 100, 0xF800);              // outside the tile: should NOT appear
-//  fb_flush();
-
-//  fb_set_tile(40, 60, 30, 10);        // covers columns 40-69, rows 60-69
-//  fb_set_hline(30, 65, 50, 0xF800);   // columns 30-79: overhangs both sides
-//  fb_set_hline(45, 62, 10, 0x07E0);   // fully inside
-//  fb_set_hline(40, 75, 20, 0x001F);   // row 75 is below the tile: should NOT appear
-//  fb_flush();
-
-//  fb_set_tile(40, 60, 30, 10);        // columns 40-69, rows 60-69
-//  fb_set_vline(50, 55, 20, 0xF800);   // rows 55-74: overhangs top and bottom
-//  fb_set_vline(60, 62, 4, 0x07E0);    // fully inside: rows 62-65
-//  fb_set_vline(80, 60, 5, 0x001F);    // column 80 is right of the tile: should NOT appear
-//  fb_flush();
-
-//  fb_set_tile(40, 60, 30, 10);
-//  fb_fill_tile(0x001F);                // blue background
-//  fb_set_pixel(40, 60, 0xFFFF);        // white dot at top-left
-//  fb_set_pixel(69, 69, 0xFFFF);        // white dot at bottom-right
-//  fb_flush();
-//
-//  fb_set_tile(100, 150, 20, 5);        // move the tile, but don't fill
-//  fb_set_pixel(100, 150, 0xF800);      // one red dot
-//  fb_flush();
-
-//  fb_begin_tile(40, 60, 30, 10, 0x001F);	// blue background
-//  fb_set_pixel(40, 60, 0xFFFF);       	 	// white dot at top-left
-//  fb_set_pixel(69, 69, 0xFFFF);        		// white dot at bottom-right
-//  fb_flush();
-//
-//  fb_begin_tile(100, 150, 20, 5, 0x001F);
-//  fb_set_pixel(100, 150, 0xF800);      		// one red dot
-//  fb_flush();
-
-
-//  gfx_set_pixel(0, 0, 0xFFFF);        // white dot at top-left
-//  gfx_set_pixel(239, 0, 0xF800);      // red dot at top-right
-//  gfx_set_pixel(0, 319, 0x07E0);      // green dot at bottom-left
-//  gfx_set_pixel(239, 319, 0x001F);    // blue dot at bottom-right
-//
-//  gfx_draw_hline(10, 100, 150, 0xF800);
-//  gfx_draw_vline(80, 25, 150, 0x07E0);
-//
-//
-//  gfx_draw_brush_stamp(240, 0, 30, 0xF800);
 
   /* USER CODE END 2 */
 
