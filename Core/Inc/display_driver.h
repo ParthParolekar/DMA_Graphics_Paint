@@ -18,9 +18,6 @@ void display_command(uint8_t cmd);
 void display_data(uint8_t data);
 void display_data_buffer(const uint8_t *buf, uint16_t len);
 void set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
-void draw_pixel(uint16_t x, uint16_t y, uint16_t color);
-void draw_hline(uint16_t x, uint16_t y, uint16_t length, uint16_t color);
-void draw_vline(uint16_t x, uint16_t y, uint16_t length, uint16_t color);
 void fill_screen(uint16_t color);
 
 void display_wait_ready(void);

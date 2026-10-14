@@ -32,7 +32,6 @@ static uint16_t touch_read_channel(uint8_t cmd){
 	 HAL_SPI_TransmitReceive(&hspi2, tx, rx, 3, HAL_MAX_DELAY);
 	 HAL_GPIO_WritePin(TOUCH_CS_GPIO_Port, TOUCH_CS_Pin, GPIO_PIN_SET);     // deselect
 
-//	 return (uint16_t)(((rx[1] << 8) | (rx[2]) >>3)) & 0x0FFF;
 	 return (uint16_t)(((rx[1] << 8) | rx[2]) >> 3) & 0x0FFF;
 }
 

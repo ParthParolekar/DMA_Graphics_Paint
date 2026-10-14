@@ -54,38 +54,6 @@ void set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
     display_command(0x2C);                       // RAMWR
 }
 
-void draw_pixel(uint16_t x, uint16_t y, uint16_t color) {
-    set_window(x, y, x, y);
-    display_data(color >> 8);
-    display_data(color & 0xFF);
-}
-
-void draw_hline(uint16_t x, uint16_t y, uint16_t length, uint16_t color){
-	set_window(x, y, x + length - 1, y);
-
-	uint8_t hline[length * 2];
-
-	for(uint16_t i=0; i < length; i++){
-		hline[i*2] = color >> 8;
-		hline[i*2 + 1] = color & 0xFF;
-	}
-
-	display_data_buffer(hline, sizeof(hline));
-}
-
-void draw_vline(uint16_t x, uint16_t y, uint16_t length, uint16_t color){
-	set_window(x, y, x, y + length - 1);
-
-	uint8_t vline[length * 2];
-
-	for(uint16_t i=0; i < length; i++){
-		vline[i*2] = color >> 8;
-		vline[i*2 + 1] = color & 0xFF;
-	}
-
-	display_data_buffer(vline, sizeof(vline));
-}
-
 void fill_screen(uint16_t color) {
     uint8_t line[LCD_WIDTH * 2];               // one row of RGB565 = 480 bytes
 
