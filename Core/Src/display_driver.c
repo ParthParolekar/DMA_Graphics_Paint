@@ -8,6 +8,8 @@
 // display_driver.c
 #include "display_driver.h"
 #include "main.h"          // pin names (LCD_CS, LCD_DC, LCD_RST) from CubeMX
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define DMAMUX_REQ_SPI1_TX   17     // request ID from the ST headers (LL_DMAMUX_REQ_SPI1_TX = 0x11)
 
@@ -15,9 +17,23 @@ extern SPI_HandleTypeDef hspi1;
 
 static volatile uint8_t dma_busy = 0;
 static volatile uint32_t dma_error_count = 0;
+static TaskHandle_t waiting_task = NULL;
 
 void display_wait_ready(void){
-	while (dma_busy){}
+	//old spin wait
+	if(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED){
+		while(dma_busy){}
+		return;
+	}
+
+
+	while (dma_busy){
+		waiting_task = xTaskGetCurrentTaskHandle();
+		if(dma_busy){
+			ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
+		}
+	}
+	waiting_task = NULL;
 }
 
 uint32_t display_dma_error_count(void){
@@ -146,6 +162,7 @@ void display_data_buffer_dma(const uint8_t *buf, uint16_t len){
 void DMA1_Channel1_IRQHandler(void){
 
 	uint32_t isr = DMA1->ISR;
+	BaseType_t woken = pdFALSE;
 
 	if(isr & (DMA_ISR_TCIF1 | DMA_ISR_TEIF1)){
 		DMA1->IFCR = DMA_IFCR_CGIF1;				//clear the flag
@@ -165,6 +182,11 @@ void DMA1_Channel1_IRQHandler(void){
 	    (void)SPI1->SR;								// finishes clearing OVR
 
 	    dma_busy = 0;
+	    if(waiting_task != NULL){
+	    	vTaskNotifyGiveFromISR(waiting_task, &woken);
+	    	waiting_task = NULL;
+	    }
+	    portYIELD_FROM_ISR(woken);
 	}
 
 

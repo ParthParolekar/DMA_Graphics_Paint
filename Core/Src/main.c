@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -59,12 +60,16 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+volatile UBaseType_t paint_hwm;		// To measure paint task stack usage
+static TaskHandle_t paint_handle;
+
 static void test_scene(void) {
     gfx_draw_rectangle(20, 10, 200, 60, 0xF800, 0);      // red outline, crosses strips 0-3
     gfx_draw_rectangle(40, 100, 80, 50, 0x07E0, 1);      // filled green, crosses strips 5-7
@@ -75,6 +80,52 @@ static void test_scene(void) {
 
 static void clear_screen_scene(void) {
     gfx_draw_rectangle(0, 0, 240, 320, 0x0000, 1);      // Clear screen
+
+}
+
+static void test_task(void *arg)
+{
+    for (;;) {
+    	paint_hwm = uxTaskGetStackHighWaterMark(paint_handle);
+        HAL_UART_Transmit(&huart2, (uint8_t *)"tick\r\n", 6, HAL_MAX_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+static void paint_task(void *arg){
+
+	uint8_t  stroking = 0;          // 1 while the stylus is down and moving
+	uint8_t  rejected = 0;          // consecutive reads thrown away as jumps
+	uint16_t last_x = 0, last_y = 0;
+
+	for(;;){
+	    uint16_t ax, ay, sx, sy;
+
+	    if (touch_read_averaged(&ax, &ay)) {
+	        touch_to_screen(ax, ay, &sx, &sy);
+
+	        if (stroking) {
+	            if (abs((int)sx - last_x) > MAX_JUMP || abs((int)sy - last_y) > MAX_JUMP) {
+	                if (++rejected < 3) continue;     // ignore this one
+	                stroking = 0;                      // three in a row: really moved, start a new stroke
+	            }
+	        }
+	        rejected = 0;
+
+	        if (stroking) {
+	            gfx_paint_line(last_x, last_y, sx, sy, BRUSH_SIZE, BRUSH_COLOR);
+	        } else {
+	            gfx_paint_stamp(sx, sy, BRUSH_SIZE, BRUSH_COLOR);    // first point of a stroke
+	            stroking = 1;
+	        }
+	        last_x = sx;
+	        last_y = sy;
+	    } else {
+	        stroking = 0;           // stylus lifted: next touch starts a new stroke
+	        rejected = 0;
+	        vTaskDelay(pdMS_TO_TICKS(5));
+	    }
+	}
 
 }
 /* USER CODE END 0 */
@@ -117,41 +168,22 @@ int main(void)
 
 
   /************** Basic Function Tests **************/
+
   fb_render(clear_screen_scene, 0x0000);        // black background
 
-  uint8_t  stroking = 0;          // 1 while the stylus is down and moving
-  uint8_t  rejected = 0;          // consecutive reads thrown away as jumps
-  uint16_t last_x = 0, last_y = 0;
-
-  while (1) {
-        uint16_t ax, ay, sx, sy;
-
-        if (touch_read_averaged(&ax, &ay)) {
-            touch_to_screen(ax, ay, &sx, &sy);
-
-            if (stroking) {
-                if (abs((int)sx - last_x) > MAX_JUMP || abs((int)sy - last_y) > MAX_JUMP) {
-                    if (++rejected < 3) continue;     // ignore this one
-                    stroking = 0;                      // three in a row: really moved, start a new stroke
-                }
-            }
-            rejected = 0;
-
-            if (stroking) {
-                gfx_paint_line(last_x, last_y, sx, sy, BRUSH_SIZE, BRUSH_COLOR);
-            } else {
-                gfx_paint_stamp(sx, sy, BRUSH_SIZE, BRUSH_COLOR);    // first point of a stroke
-                stroking = 1;
-            }
-            last_x = sx;
-            last_y = sy;
-        } else {
-            stroking = 0;           // stylus lifted: next touch starts a new stroke
-            rejected = 0;
-        }
-    }
+  xTaskCreate(test_task, "test", 128, NULL, 1, NULL);
+  xTaskCreate(paint_task, "paint", 192, NULL, 2, &paint_handle);
 
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -208,6 +240,28 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM6 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM6)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
